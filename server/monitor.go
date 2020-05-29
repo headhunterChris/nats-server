@@ -1913,6 +1913,8 @@ func (reason ClosedState) String() string {
 		return "No Responders Requires Headers"
 	case ClusterNameConflict:
 		return "Cluster Name Conflict"
+	case DuplicateClientID:
+		return "Duplicate Client ID"
 	}
 
 	return "Unknown State"
