@@ -265,12 +265,21 @@ func (mset *Stream) AddConsumer(config *ConsumerConfig) (*Consumer, error) {
 
 	// Make sure any partition subject is also a literal.
 	if config.FilterSubject != "" {
-		// Make sure this is a valid partition of the interest subjects.
-		if !mset.validSubject(config.FilterSubject) {
-			return nil, fmt.Errorf("consumer filter subject is not a valid subset of the interest subjects")
+		// If this is a direct match for the streams only subject clear the filter.
+		mset.mu.RLock()
+		if len(mset.config.Subjects) == 1 && mset.config.Subjects[0] == config.FilterSubject {
+			config.FilterSubject = _EMPTY_
 		}
-		if config.AckPolicy == AckAll {
-			return nil, fmt.Errorf("consumer with filter subject can not have an ack policy of ack all")
+		mset.mu.RUnlock()
+
+		if config.FilterSubject != "" {
+			// Make sure this is a valid partition of the interest subjects.
+			if !mset.validSubject(config.FilterSubject) {
+				return nil, fmt.Errorf("consumer filter subject is not a valid subset of the interest subjects")
+			}
+			if config.AckPolicy == AckAll {
+				return nil, fmt.Errorf("consumer with filter subject can not have an ack policy of ack all")
+			}
 		}
 	}
 
@@ -477,7 +486,7 @@ func (mset *Stream) AddConsumer(config *ConsumerConfig) (*Consumer, error) {
 		}
 		// If we are here we have already registered this durable. If it is still active that is an error.
 		if eo.Active() {
-			return nil, fmt.Errorf("consumer already exists and is still active")
+			return nil, fmt.Errorf("consumer already 1exists and is still active")
 		}
 		// Since we are here this means we have a potentially new durable so we should update here.
 		// Check that configs are the same.
